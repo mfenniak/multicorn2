@@ -577,6 +577,62 @@ multicornEndForeignScan(ForeignScanState *node)
 	state->p_iterator = NULL;
 }
 
+/*
+
+Currently one of the failures in running the regression tests under Postgres 14 is the following:
+
+Original test:
+
+    update testmulticorn set test1 = 'test';
+    NOTICE:  BEGIN
+    NOTICE:  []                                     this is the "quals" received by execute()
+    NOTICE:  ['test1', 'test2']                     this is the "columns" received by execute()
+    NOTICE:  ROLLBACK
+    ERROR:  Error in python: NotImplementedError
+    DETAIL:  This FDW does not support the writable API
+
+Current behavior in pg14:
+
+    update testmulticorn set test1 = 'test';
+    NOTICE:  BEGIN
+    NOTICE:  []                                     this is the "quals" received by execute()
+    NOTICE:  ['test1']                              this is the "columns" received by execute()
+    NOTICE:  ROLLBACK
+    ERROR:  Error in python: NotImplementedError
+    DETAIL:  This FDW does not support the writable API
+
+The issue is that the "columns" received by execute() are not the same under PG14 as they were under PG13.  When
+performing the statement "update ... set test1 = 'test'", theoretically Postgres is realizing that rowid_column (test1)
+is needed from the return values of the query, but test2 isn't needed, so it isn't queried.
+
+This seems "OK"... possibly just a test difference that we could consider updating... which I've started in
+write_test_1.out.
+
+But other than that behavior change, arguably OK, the following test case also fails...
+
+    delete from testmulticorn_write where test1 = 'test1 1 0' returning test2, test1;
+    NOTICE:  BEGIN
+    NOTICE:  [test1 = test1 1 0]                        this is the "quals" received by execute()
+    NOTICE:  ['test1']                                  this is the "columns" received by execute(); used to be ['test1', 'test2']
+    NOTICE:  DELETING: test1 1 0
+    NOTICE:  PRECOMMIT
+    NOTICE:  COMMIT
+    -   test2   |   test1
+    ------------+-----------
+    - test2 2 0 | test1 1 0                             pre-PG14 behavior, test2 is not null
+    + test2 |   test1
+    +-------+-----------
+    +       | test1 1 0                                 PG14 behavior, test2 is NULL
+    (1 row)
+
+In this case, the "returning" clause is being used in the DELETE statement, so the query includes both the 'test1' and
+'test2' fields, but columns passed to execute() is only 'test1', and the returned values from the delete doesn't include
+the 'test2' field.  It would make sense to me that if the returning list for the query includes a field, even if we
+don't need it in order to perform the delete, we should be generating it from the FDW and then returning it to PG.
+
+So, not sure what to fix just yet, but that's one clear behavior difference in PG14.
+
+*/
 
 
 /*

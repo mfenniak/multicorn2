@@ -10,3 +10,4 @@ results/
 regression.*
 .direnv
 result
+*.swp
