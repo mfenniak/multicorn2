@@ -632,6 +632,58 @@ don't need it in order to perform the delete, we should be generating it from th
 
 So, not sure what to fix just yet, but that's one clear behavior difference in PG14.
 
+
+
+
+
+Next problem -- write_filesystem.out
+
+         SELECT * from testmulticorn where color in ('cyan', 'magenta') order by filename;
+    +psql:test/test-common/multicorn_testfilesystem.include:197: NOTICE:  .execute([color = ANY(['cyan', 'magenta'])], {'ext', 'color', 'name', 'size', 'data', 'filename'})
+       color  |  size  |   name   | ext |          filename          |     data
+     ---------+--------+----------+-----+----------------------------+---------------
+      cyan    | medium | triangle | jpg | cyan/medium/triangle.jpg   | Im a triangle
+    - magenta | large  | triangle | jpg | magenta/large/triangle.jpg | Im a triangle
+    + magenta | large  | triangle | jpg | magenta/large/triangle.jpg |
+     (2 rows)
+
+The "data" field is being returned as NULL, but it should be "Im a triangle".  The data field seems to be queried from
+the execute method... so it's more likely than not that a previous modification failed, rather than that the query is
+failing.  I'll add logging to the update, delete, and insert methods, run under pg13, and then compare with pg14...
+
+This is very much related to the previous problem...
+
+In PG13, the statement...
+
+    UPDATE testmulticorn set color = 'magenta' where size = 'large' and color = 'cyan' returning filename;
+
+Will have these interactions with the FDW layer:
+
+    .execute([size = large, color = cyan], {'size', 'color', 'filename', 'ext', 'name', 'data'})
+    .update('cyan/large/triangle.jpg', {'color': 'magenta', 'size': 'large', 'name': 'triangle', 'ext': 'jpg', 'filename': 'cyan/large/triangle.jpg', 'data': 'Im a triangle'})
+
+But in PG14, the sme statement will have these interactions with the FDW layer:
+
+    .execute([size = large, color = cyan], {'filename', 'color', 'size'})
+    .update('cyan/large/triangle.jpg', {'color': 'magenta', 'size': 'large', 'name': 'triangle', 'ext': 'jpg', 'filename': 'cyan/large/triangle.jpg', 'data': None})
+
+Notice that the execute() in PG13 is retrieving all the columns, but in PG14 it's only retrieving the columns needed for
+the WHERE and SET clauses; therefore "data" field is not retrieved.  However the "update" method is still being called
+with the "data" field set to "None", which is causing the "data" field to be set to NULL in the database.
+
+The 'ext' field is being passed to update even though nobody asked for it from execute; but the execute() method isn't
+checking whether it was a requested column and it is just returning it blindly.
+
+The PG14 implementation is "more efficient" in that it's only retrieving the columns that are needed for the query, but
+then it's passing empty data to update, which is causing the data to be set to NULL.  For full backwards compatibility,
+we would be retrieving all the columns from execute()... but to move forward more efficiently we would only provide the
+values that need to be updated to update -- technically a compatibility break, but it's a more efficient way to do
+things.
+
+Hypothetically, if execute() was called with all columns (or just returned all data regardless), the existing tests do
+pass, indicating that this is the sole identified problem source.  I think the best way to fix this with the least
+compatibility risk is to retrieve all the columns...
+
 */
 
 
