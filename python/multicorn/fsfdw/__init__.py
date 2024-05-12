@@ -223,7 +223,10 @@ class FilesystemFdw(TransactionAwareForeignDataWrapper):
         structure.
 
         """
-        return self.items_to_dicts(self.get_items(quals, columns), columns)
+        # log_to_postgres(".execute(%r, %r)" % (quals, columns))
+        for row in self.items_to_dicts(self.get_items(quals, columns), columns):
+            # log_to_postgres(".execute() yielding row %r" % row)
+            yield row
 
     def get_items(self, quals, columns):
         filename_column = self.filename_column
@@ -302,6 +305,7 @@ class FilesystemFdw(TransactionAwareForeignDataWrapper):
                         (', '.join(keys), ', '.join(values)), level=ERROR)
 
     def insert(self, values):
+        # log_to_postgres(".insert(%r)" % (values))
         item = self._item_from_dml(values)
         # Ensure that the file is created.
         try:
@@ -322,6 +326,8 @@ class FilesystemFdw(TransactionAwareForeignDataWrapper):
         return return_value
 
     def update(self, oldfilename, newvalues):
+        # log_to_postgres(".update(%r, %r)" % (oldfilename, newvalues))
+
         # The "oldfilename" file should exist.
         olditem = self.structured_directory.from_filename(oldfilename)
         olditem.content = self.updated_content.get(olditem.full_filename,
@@ -377,6 +383,8 @@ class FilesystemFdw(TransactionAwareForeignDataWrapper):
         return return_value
 
     def delete(self, rowid):
+        # log_to_postgres(".delete(%r)" % (rowid))
+
         item = self.structured_directory.from_filename(rowid)
         # Ensure that the file exists, and is locked.
         item.open(False, fail_if='missing')

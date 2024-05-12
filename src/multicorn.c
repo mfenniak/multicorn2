@@ -684,6 +684,9 @@ Hypothetically, if execute() was called with all columns (or just returned all d
 pass, indicating that this is the sole identified problem source.  I think the best way to fix this with the least
 compatibility risk is to retrieve all the columns...
 
+The test behaviors in write_test.sql just happen to work because execute() returns all the columns, even if the columns
+weren't requested... so any behavior changes in write_test.out that are just about the requested columns can be ignored.
+
 */
 
 
@@ -714,11 +717,37 @@ multicornAddForeignUpdateTargets(
 	Query *parsetree = root->parse;
 #endif
 
+#if PG_VERSION_NUM >= 140000
+	if (root->parse->commandType == CMD_UPDATE) {
+
+		for (i = 0; i < desc->natts; i++)
+		{
+			Form_pg_attribute att = TupleDescAttr(desc, i);
+
+			if (!att->attisdropped)
+			{
+				var = makeVar(rtindex,
+							att->attnum,
+							att->atttypid,
+							att->atttypmod,
+							att->attcollation,
+							0);
+				add_row_identity_var(root, var, rtindex, strdup(NameStr(att->attname)));
+				// elog(NOTICE, "Adding row identity var: %s", NameStr(att->attname));
+			}
+		}
+
+		return;
+	}
+#endif
+
+
 	foreach(cell, parsetree->returningList)
 	{
 		returningTle = lfirst(cell);
 		tle = copyObject(returningTle);
 		tle->resjunk = true;
+		// elog(NOTICE, "adding column from returningList... %s", tle->resname);
 #if PG_VERSION_NUM >= 140000
 		add_row_identity_var(root, (Var *)tle->expr, rtindex, strdup(tle->resname));
 #else
@@ -752,6 +781,7 @@ multicornAddForeignUpdateTargets(
 		ereport(ERROR, (errmsg("%s", "The rowid attribute does not exist")));
 	}
 
+	// elog(NOTICE, "adding column from identity... %s", attrname);
 #if PG_VERSION_NUM >= 140000
 	add_row_identity_var(root, var, parsetree->resultRelation, strdup(attrname));
 #else

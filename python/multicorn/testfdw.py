@@ -119,6 +119,7 @@ class TestForeignDataWrapper(ForeignDataWrapper):
         return sortkeys
 
     def update(self, rowid, newvalues):
+        # log_to_postgres(".update(%r, %r)" % (rowid, newvalues))
         if self.test_type == 'nowrite':
             super(TestForeignDataWrapper, self).update(rowid, newvalues)
         log_to_postgres("UPDATING: %s with %s" % (
