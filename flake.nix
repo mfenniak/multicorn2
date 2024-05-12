@@ -113,9 +113,7 @@
         # Local source directory, but only including the files necessary for running the regression tests...
         src = [
           ./Makefile
-          ./test-3.9
-          ./test-3.10
-          ./test-common
+          ./test
         ];
         unpackPhase = ''
           for srcFile in $src; do

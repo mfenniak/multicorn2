@@ -1,7 +1,7 @@
 -- Setup the test
 CREATE EXTENSION multicorn;
 CREATE EXTENSION plpython3u;
-\i test-common/disable_jit.include
+\i test/test-common/disable_jit.include
 
 CREATE OR REPLACE FUNCTION create_table() RETURNS VOID AS $$
     import plpy
@@ -49,7 +49,7 @@ select create_table();
 
 -- End of Setup
 
-\i test-common/multicorn_testfilesystem.include
+\i test/test-common/multicorn_testfilesystem.include
 
 -- Cleanup everything we've done
 

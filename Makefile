@@ -111,36 +111,36 @@ PYTHON_TEST_VERSION ?= $(python_version)
 PG_TEST_VERSION ?= $(MAJORVERSION)
 UNSUPPORTS_SQLALCHEMY=$(shell python -c "import sqlalchemy;import psycopg2"  1> /dev/null 2>&1; echo $$?)
 
-TESTS        = test-$(PYTHON_TEST_VERSION)/sql/multicorn_cache_invalidation.sql \
-  test-$(PYTHON_TEST_VERSION)/sql/multicorn_column_options_test.sql \
-  test-$(PYTHON_TEST_VERSION)/sql/multicorn_error_test.sql \
-  test-$(PYTHON_TEST_VERSION)/sql/multicorn_logger_test.sql \
-  test-$(PYTHON_TEST_VERSION)/sql/multicorn_planner_test.sql \
-  test-$(PYTHON_TEST_VERSION)/sql/multicorn_regression_test.sql \
-  test-$(PYTHON_TEST_VERSION)/sql/multicorn_sequence_test.sql \
-  test-$(PYTHON_TEST_VERSION)/sql/multicorn_test_date.sql \
-  test-$(PYTHON_TEST_VERSION)/sql/multicorn_test_dict.sql \
-  test-$(PYTHON_TEST_VERSION)/sql/multicorn_test_list.sql \
-  test-$(PYTHON_TEST_VERSION)/sql/multicorn_test_sort.sql
+TESTS        = test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/multicorn_cache_invalidation.sql \
+  test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/multicorn_column_options_test.sql \
+  test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/multicorn_error_test.sql \
+  test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/multicorn_logger_test.sql \
+  test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/multicorn_planner_test.sql \
+  test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/multicorn_regression_test.sql \
+  test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/multicorn_sequence_test.sql \
+  test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/multicorn_test_date.sql \
+  test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/multicorn_test_dict.sql \
+  test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/multicorn_test_list.sql \
+  test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/multicorn_test_sort.sql
 
 ifeq (${UNSUPPORTS_SQLALCHEMY}, 0)
   TESTS += test-3/sql/multicorn_alchemy_test.sql
 endif
 
-  TESTS += test-$(PYTHON_TEST_VERSION)/sql/write_filesystem.sql \
-	test-$(PYTHON_TEST_VERSION)/sql/write_savepoints.sql \
-	test-$(PYTHON_TEST_VERSION)/sql/write_test.sql
+  TESTS += test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/write_filesystem.sql \
+	test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/write_savepoints.sql \
+	test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/write_test.sql
   ifeq (${UNSUPPORTS_SQLALCHEMY}, 0)
-	TESTS += test-$(PYTHON_TEST_VERSION)/sql/write_sqlalchemy.sql
+	TESTS += test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/write_sqlalchemy.sql
   endif
 
-  TESTS += test-$(PYTHON_TEST_VERSION)/sql/import_test.sql
+  TESTS += test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/import_test.sql
   ifeq (${UNSUPPORTS_SQLALCHEMY}, 0)
-	TESTS += test-$(PYTHON_TEST_VERSION)/sql/import_sqlalchemy.sql
+	TESTS += test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/import_sqlalchemy.sql
   endif
 
-REGRESS      = $(patsubst test-$(PYTHON_TEST_VERSION)/sql/%.sql,%,$(TESTS))
-REGRESS_OPTS = --inputdir=test-$(PYTHON_TEST_VERSION) --encoding=UTF8
+REGRESS      = $(patsubst test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION)/sql/%.sql,%,$(TESTS))
+REGRESS_OPTS = --inputdir=test/py$(PYTHON_TEST_VERSION)/pg$(PG_TEST_VERSION) --encoding=UTF8
 
 $(info Python version is $(python_version))
 

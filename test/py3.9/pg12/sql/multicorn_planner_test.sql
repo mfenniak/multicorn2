@@ -1,5 +1,5 @@
 SET client_min_messages=NOTICE;
-\i test-common/disable_jit.include
+\i test/test-common/disable_jit.include
 CREATE EXTENSION multicorn;
 CREATE server multicorn_srv foreign data wrapper multicorn options (
     wrapper 'multicorn.testfdw.TestForeignDataWrapper'
